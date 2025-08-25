@@ -1,0 +1,74 @@
+{
+    "Cabeza": {
+        "Item": "Máscara de filtrado de la Estación de Bombeo",
+        "Source": "Operacion: Compuerta / Catalyst"
+    },
+    "Cuello": {
+        "Item": "Cabujón del vuelo infinito",
+        "Source": "Tazavesh: Gambito de So'leah"
+    },
+    "Hombreras": {
+        "Item": "Protectores de chatarra mecanizados",
+        "Source": "Operacion: Compuerta / Catalyst"
+    },
+    "Capa": {
+        "Item": "Mantón reshii",
+        "Source": "Quest",
+		"Enchant": "Chant of Leeching Fangs"
+    },
+    "Pechera": {
+        "Item": "Sobrevesta seráfica de la Ordenación",
+        "Source": "Priorato de la Llama Sagrada / Catalyst",
+		"Enchant": "Crystalline Radiance"
+    },
+    "Brazales": {
+        "Item": "Bandas con runas marcadas",
+        "Source": "Crafting",
+		"Enchant": "+2040 Sanguijuela"
+    },
+    "Guantes": {
+        "Item": "Guantes de fijación inquietante",
+        "Source": "Salas de la Expiación / Catalyst"
+    },
+    "Cinturón": {
+        "Item": "Cinto de aumento suprarrenal",
+        "Source": "Crafting"
+    },
+    "Pantalones": {
+        "Item": "Calzas manchadas de babas",
+        "Source": "Ecodomo Al'dani / Catalyst",
+		"Enchant": "Stormbound Armor Kit"
+    },
+    "Botas": {
+        "Item": "Botas de guardián incondicional",
+        "Source": "Priorato de la Llama Sagrada",
+		"Enchant": "Scout's March"
+    },
+    "Anillo 1": {
+        "Item": "Sello de estrellas en colapso",
+        "Source": "Tazavesh: Gambito de So'leah",
+		"Enchant": "+315 Celeridad"
+    },
+    "Anillo 2": {
+        "Item": "Anillo de la panoplia",
+        "Source": "Tazavesh: Calles de las maravillas",
+		"Enchant": "+315 Celeridad"
+    },
+    "Abalorio 1": {
+        "Item": "Tomo de devoción de la Luz",
+        "Source": "Priorato de la Llama Sagrada"
+    },
+    "Abalorio 2": {
+        "Item": "Marcapasos de seforio improvisado",
+        "Source": "Operacion: Compuerta"
+    },
+    "Arma 1M": {
+        "Item": "#N/A",
+        "Source": "#N/A"
+    },
+    "Arma 2M": {
+        "Item": "Interdicción de cosechador",
+        "Source": "Ara-Kara, Ciudad de los ecos",
+		"Enchant": "Oathsown's Tenacity"
+    }
+}

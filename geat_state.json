@@ -1,0 +1,98 @@
+{
+    "Cabeza": {
+        "Tier": "Campeón",
+        "BIS": false,
+        "Enchant": false,
+        "Exclude": false
+    },
+    "Cuello": {
+        "Tier": "Campeón",
+        "BIS": false,
+        "Enchant": false,
+        "Exclude": false
+    },
+    "Hombreras": {
+        "Tier": "Héroe",
+        "BIS": true,
+        "Enchant": false,
+        "Exclude": false
+    },
+    "Capa": {
+        "Tier": "Mítico",
+        "BIS": true,
+        "Enchant": true,
+        "Exclude": false
+    },
+    "Pechera": {
+        "Tier": "Campeón",
+        "BIS": false,
+        "Enchant": false,
+        "Exclude": false
+    },
+    "Brazales": {
+        "Tier": "Campeón",
+        "BIS": false,
+        "Enchant": false,
+        "Exclude": false
+    },
+    "Guantes": {
+        "Tier": "Campeón",
+        "BIS": false,
+        "Enchant": false,
+        "Exclude": false
+    },
+    "Cinturón": {
+        "Tier": "Mítico",
+        "BIS": true,
+        "Enchant": false,
+        "Exclude": false
+    },
+    "Pantalones": {
+        "Tier": "Héroe",
+        "BIS": false,
+        "Enchant": true,
+        "Exclude": false
+    },
+    "Botas": {
+        "Tier": "Campeón",
+        "BIS": false,
+        "Enchant": false,
+        "Exclude": false
+    },
+    "Anillo 1": {
+        "Tier": "Héroe",
+        "BIS": true,
+        "Enchant": true,
+        "Exclude": false
+    },
+    "Anillo 2": {
+        "Tier": "Campeón",
+        "BIS": true,
+        "Enchant": false,
+        "Exclude": false
+    },
+    "Abalorio 1": {
+        "Tier": "Campeón",
+        "BIS": false,
+        "Enchant": false,
+        "Exclude": false
+    },
+    "Abalorio 2": {
+        "Tier": "Campeón",
+        "BIS": false,
+        "Enchant": false,
+        "Exclude": false
+    },
+    "Arma 1M": {
+        "Tier": "Desnudo",
+        "BIS": false,
+        "Enchant": false,
+        "Exclude": true
+    },
+    "Arma 2M": {
+        "Tier": "Héroe",
+        "BIS": false,
+        "Enchant": false,
+        "Exclude": false
+    }
+}
