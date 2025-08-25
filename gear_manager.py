@@ -1,136 +1,277 @@
 import tkinter as tk
-from tkinter import ttk, messagebox, filedialog
+from tkinter import ttk, messagebox
 import json
+import os
 
-# Lista de slots de WoW
-SLOTS = [
-    "Cabeza", "Cuello", "Hombreras", "Capa", "Pechera", "Brazales", "Guantes",
-    "Cinturón", "Pantalones", "Botas", "Anillo 1", "Anillo 2",
-    "Abalorio 1", "Abalorio 2", "Arma 1M", "Arma 2M"
-]
-
-# Tiers de menor a mayor calidad
+# Definir tiers
 TIERS = ["Desnudo", "Explorador", "Aventurero", "Veterano", "Campeón", "Héroe", "Mítico"]
+
+# Slots encantables
+ENCHANTABLE_SLOTS = ["Capa", "Pechera", "Brazales", "Pantalones", "Botas", "Anillo 1", "Anillo 2", "Arma 2M", "Arma 1M"]
+
+# Archivos
+STATE_FILE = "gear_state.json"
+BIS_FILE = "bis.json"
+
 
 class GearApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("Gestor de Equipo - WoW")
-        self.items = {}
+        self.root.title("WoW BIS Tracker")
+        self.root.geometry("1200x700")
 
-        # Contenedor con scrollbar
-        container = tk.Frame(root)
-        container.pack(fill="both", expand=True)
+        self.bis_data = self.load_bis()
 
-        canvas = tk.Canvas(container)
-        scrollbar = tk.Scrollbar(container, orient="vertical", command=canvas.yview)
-        self.scroll_frame = tk.Frame(canvas)
+        # Frames principales
+        left_frame = tk.Frame(root)
+        left_frame.pack(side="left", fill="both", expand=True, padx=10, pady=10)
 
-        self.scroll_frame.bind(
-            "<Configure>",
-            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        right_frame = tk.Frame(root)
+        right_frame.pack(side="right", fill="both", expand=True, padx=10, pady=10)
+
+        # Tabla de prioridades
+        self.priority_table = ttk.Treeview(
+            right_frame,
+            columns=("Num", "Slot", "Tier", "Objeto", "Localización", "Nivel"),
+            show="headings",
+            height=25
         )
 
-        canvas.create_window((0, 0), window=self.scroll_frame, anchor="nw")
-        canvas.configure(yscrollcommand=scrollbar.set)
+        self.priority_table.heading("Num", text="#")
+        self.priority_table.heading("Slot", text="Slot")
+        self.priority_table.heading("Tier", text="Tier")
+        self.priority_table.heading("Objeto", text="Objeto")
+        self.priority_table.heading("Localización", text="Localización")
+        self.priority_table.heading("Nivel", text="Nivel M+")
 
-        canvas.pack(side="left", fill="both", expand=True)
-        scrollbar.pack(side="right", fill="y")
+        self.priority_table.column("Num", width=40, anchor="center")
+        self.priority_table.column("Slot", width=120, anchor="center")
+        self.priority_table.column("Tier", width=100, anchor="center")
+        self.priority_table.column("Objeto", width=200, anchor="w")
+        self.priority_table.column("Localización", width=250, anchor="w")
+        self.priority_table.column("Nivel", width=100, anchor="center")
 
-        # Crear slots
+        self.priority_table.pack(fill="both", expand=True)
+
+        # Botón modificar BIS
+        tk.Button(right_frame, text="Modificar BIS", command=self.open_bis_editor).pack(pady=5)
+
+        # Slots
         self.entries = {}
-        for slot in SLOTS:
-            frame = tk.LabelFrame(self.scroll_frame, text=slot, padx=5, pady=5)
-            frame.pack(fill="x", padx=10, pady=5)
+        self.create_slots(left_frame)
 
-            tk.Label(frame, text="Item:").grid(row=0, column=0, sticky="w")
-            item_entry = tk.Entry(frame, width=40)
-            item_entry.grid(row=0, column=1, padx=5)
+        # Cargar estado guardado
+        self.load_state()
 
-            tk.Label(frame, text="Fuente:").grid(row=1, column=0, sticky="w")
-            source_entry = tk.Entry(frame, width=40)
-            source_entry.grid(row=1, column=1, padx=5)
+        # Actualizar en tiempo real
+        self.update_priority()
 
-            tk.Label(frame, text="Tier:").grid(row=2, column=0, sticky="w")
-            tier_combo = ttk.Combobox(frame, values=TIERS, state="readonly", width=15)
-            tier_combo.current(0)  # Por defecto: Desnudo
-            tier_combo.grid(row=2, column=1, padx=5, sticky="w")
+        # Guardar al cerrar
+        self.root.protocol("WM_DELETE_WINDOW", self.on_close)
+
+    def create_slots(self, parent):
+        slots = [
+            "Cabeza", "Cuello", "Hombreras", "Capa",
+            "Pechera", "Brazales", "Guantes", "Cinturón",
+            "Pantalones", "Botas", "Anillo 1", "Anillo 2",
+            "Abalorio 1", "Abalorio 2", "Arma 1M", "Arma 2M"
+        ]
+
+        for slot in slots:
+            frame = tk.Frame(parent)
+            frame.pack(fill="x", pady=2)
+
+            tk.Label(frame, text=slot, width=12, anchor="w").pack(side="left")
+
+            tier_var = tk.StringVar(value="Desnudo")
+            tier_menu = ttk.Combobox(frame, textvariable=tier_var, values=TIERS, state="readonly", width=12)
+            tier_menu.pack(side="left", padx=5)
 
             bis_var = tk.BooleanVar()
-            bis_check = tk.Checkbutton(frame, text="BIS", variable=bis_var)
-            bis_check.grid(row=3, column=1, sticky="w")
+            tk.Checkbutton(frame, text="Tengo BIS", variable=bis_var).pack(side="left")
+
+            enchant_var = tk.BooleanVar()
+            tk.Checkbutton(frame, text="Encantado", variable=enchant_var).pack(side="left")
+
+            exclude_var = tk.BooleanVar()
+            tk.Checkbutton(frame, text="Excluir", variable=exclude_var).pack(side="left")
 
             self.entries[slot] = {
-                "item": item_entry,
-                "source": source_entry,
-                "tier": tier_combo,
-                "bis": bis_var
+                "tier": tier_var,
+                "bis": bis_var,
+                "enchant": enchant_var,
+                "exclude": exclude_var
             }
 
-        # Botones
-        btn_frame = tk.Frame(root)
-        btn_frame.pack(pady=10)
+            tier_var.trace_add("write", lambda *_: self.update_priority())
+            bis_var.trace_add("write", lambda *_: self.update_priority())
+            enchant_var.trace_add("write", lambda *_: self.update_priority())
+            exclude_var.trace_add("write", lambda *_: self.update_priority())
 
-        tk.Button(btn_frame, text="Guardar", command=self.save_data).grid(row=0, column=0, padx=5)
-        tk.Button(btn_frame, text="Cargar", command=self.load_data).grid(row=0, column=1, padx=5)
-        tk.Button(btn_frame, text="Calcular prioridad", command=self.calculate_priority).grid(row=0, column=2, padx=5)
+    def update_priority(self):
+        # Limpiar tabla
+        for item in self.priority_table.get_children():
+            self.priority_table.delete(item)
 
-    def save_data(self):
-        data = {}
-        for slot, widgets in self.entries.items():
-            data[slot] = {
-                "Item": widgets["item"].get(),
-                "Source": widgets["source"].get(),
-                "Tier": widgets["tier"].get(),
-                "BIS": widgets["bis"].get()
-            }
-        file_path = filedialog.asksaveasfilename(defaultextension=".json", filetypes=[("JSON", "*.json")])
-        if file_path:
-            with open(file_path, "w", encoding="utf-8") as f:
-                json.dump(data, f, indent=4, ensure_ascii=False)
-            messagebox.showinfo("Éxito", "Datos guardados correctamente.")
+        upgrades, enchants_pending = [], []
 
-    def load_data(self):
-        file_path = filedialog.askopenfilename(filetypes=[("JSON", "*.json")])
-        if file_path:
-            with open(file_path, "r", encoding="utf-8") as f:
-                data = json.load(f)
-            for slot, info in data.items():
-                if slot in self.entries:
-                    self.entries[slot]["item"].delete(0, tk.END)
-                    self.entries[slot]["item"].insert(0, info.get("Item", ""))
-                    self.entries[slot]["source"].delete(0, tk.END)
-                    self.entries[slot]["source"].insert(0, info.get("Source", ""))
-                    if info.get("Tier") in TIERS:
-                        self.entries[slot]["tier"].set(info["Tier"])
-                    self.entries[slot]["bis"].set(info.get("BIS", False))
-            messagebox.showinfo("Éxito", "Datos cargados correctamente.")
-
-    def calculate_priority(self):
-        weakest_tier_index = len(TIERS)
-        weakest_slots = []
-
-        for slot, widgets in self.entries.items():
-            tier = widgets["tier"].get()
-            if tier not in TIERS:
+        for slot, vars in self.entries.items():
+            if vars["exclude"].get():
                 continue
-            tier_index = TIERS.index(tier)
 
-            if tier_index < weakest_tier_index:
-                weakest_tier_index = tier_index
-                weakest_slots = [(slot, widgets)]
-            elif tier_index == weakest_tier_index:
-                weakest_slots.append((slot, widgets))
+            tier = vars["tier"].get()
+            has_bis = vars["bis"].get()
+            has_enchant = vars["enchant"].get()
 
-        if not weakest_slots:
-            messagebox.showinfo("Resultado", "No hay objetos definidos.")
+            bis_info = self.bis_data.get(slot, {})
+            bis_name = bis_info.get("Item", "—")
+            source = bis_info.get("Source", "—")
+
+            # Mejoras pendientes
+            if not (tier == "Mítico" and has_bis):
+                min_lvl = self.min_keystone_for_upgrade(tier)
+                if min_lvl:
+                    upgrades.append({
+                        "slot": slot,
+                        "tier": tier,
+                        "bis": bis_name,
+                        "source": source,
+                        "min_lvl": min_lvl
+                    })
+
+            # Encantamientos pendientes (solo si BIS y tier Héroe/Mítico)
+            if has_bis and slot in ENCHANTABLE_SLOTS and tier in ("Héroe", "Mítico") and not has_enchant:
+                enchants_pending.append({
+                    "slot": slot,
+                    "enchant": bis_info.get("Enchant", "—")
+                })
+
+        # Mostrar en la tabla
+        index = 1
+
+        # Encantamientos primero
+        for e in enchants_pending:
+            self.priority_table.insert(
+                "", "end",
+                values=(index, e["slot"], "—", "Encantamiento: " + e["enchant"], "—", "—")
+            )
+            index += 1
+
+        # Mejoras ordenadas por tier
+        upgrades.sort(
+            key=lambda x: (
+                TIERS.index(x["tier"]),       # primero el tier
+                0 if not self.entries[x["slot"]]["bis"].get() else 1,  # luego BIS (los que no son BIS primero)
+                x["slot"]                     # opcional: desempate por nombre de slot
+            )
+        )
+        for p in upgrades:
+            self.priority_table.insert(
+                "", "end",
+                values=(index, p["slot"], p["tier"], p["bis"], p["source"], p["min_lvl"])
+            )
+            index += 1
+
+    def min_keystone_for_upgrade(self, tier):
+        tier_index = TIERS.index(tier)
+        if tier_index < TIERS.index("Campeón"):
+            return 2  # cualquier M+ vale
+        elif tier_index == TIERS.index("Campeón"):
+            return 6  # héroe -> necesitas mínimo +6
+        elif tier_index == TIERS.index("Mítico"):
+            return None  # ya tope
+        return 6
+
+    def load_bis(self):
+        if not os.path.exists(BIS_FILE):
+            return {}
+        with open(BIS_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+
+    def save_bis(self):
+        with open(BIS_FILE, "w", encoding="utf-8") as f:
+            json.dump(self.bis_data, f, indent=4, ensure_ascii=False)
+
+    def load_state(self):
+        if not os.path.exists(STATE_FILE):
             return
+        try:
+            with open(STATE_FILE, "r", encoding="utf-8") as f:
+                state = json.load(f)
+            for slot, info in state.items():
+                if slot in self.entries:
+                    vars = self.entries[slot]
+                    if info.get("Tier") in TIERS:
+                        vars["tier"].set(info.get("Tier"))
+                    vars["bis"].set(info.get("BIS", False))
+                    vars["enchant"].set(info.get("Enchant", False))
+                    vars["exclude"].set(info.get("Exclude", False))
+        except Exception:
+            pass
 
-        result = "Objetos más débiles:\n\n"
-        for slot, widgets in weakest_slots:
-            result += f"{slot}: {widgets['item'].get()} (Tier: {widgets['tier'].get()}, Fuente: {widgets['source'].get()}, BIS: {'Sí' if widgets['bis'].get() else 'No'})\n"
+    def save_state(self):
+        state = {}
+        for slot, vars in self.entries.items():
+            state[slot] = {
+                "Tier": vars["tier"].get(),
+                "BIS": vars["bis"].get(),
+                "Enchant": vars["enchant"].get(),
+                "Exclude": vars["exclude"].get()
+            }
+        with open(STATE_FILE, "w", encoding="utf-8") as f:
+            json.dump(state, f, indent=4, ensure_ascii=False)
 
-        messagebox.showinfo("Prioridad", result)
+    def on_close(self):
+        self.save_state()
+        self.save_bis()
+        self.root.destroy()
+
+    def open_bis_editor(self):
+        editor = tk.Toplevel(self.root)
+        editor.title("Modificar BIS")
+        editor.geometry("1000x600")
+
+        frame = tk.Frame(editor)
+        frame.pack(fill="both", expand=True, padx=10, pady=10)
+
+        # Encabezado
+        header = tk.Frame(frame)
+        header.pack(fill="x")
+        tk.Label(header, text="Slot", width=15, anchor="w").pack(side="left", padx=5)
+        tk.Label(header, text="Objeto", width=40, anchor="w").pack(side="left", padx=5)
+        tk.Label(header, text="Localización", width=40, anchor="w").pack(side="left", padx=5)
+        tk.Label(header, text="Encantamiento", width=20, anchor="w").pack(side="left", padx=5)
+
+        self.bis_entries = {}
+        for slot, info in self.bis_data.items():
+            row = tk.Frame(frame)
+            row.pack(fill="x", pady=1)
+
+            tk.Label(row, text=slot, width=15, anchor="w").pack(side="left", padx=5)
+
+            item_var = tk.StringVar(value=info.get("Item", ""))
+            tk.Entry(row, textvariable=item_var, width=40).pack(side="left", padx=5)
+
+            source_var = tk.StringVar(value=info.get("Source", ""))
+            tk.Entry(row, textvariable=source_var, width=40).pack(side="left", padx=5)
+
+            enchant_var = tk.StringVar(value=info.get("Enchant", ""))
+            tk.Entry(row, textvariable=enchant_var, width=20).pack(side="left", padx=5)
+
+            self.bis_entries[slot] = {"Item": item_var, "Source": source_var, "Enchant": enchant_var}
+
+        tk.Button(editor, text="Guardar", command=self.save_bis_editor).pack(pady=10)
+
+    def save_bis_editor(self):
+        for slot, vars in self.bis_entries.items():
+            self.bis_data[slot] = {
+                "Item": vars["Item"].get(),
+                "Source": vars["Source"].get(),
+                "Enchant": vars["Enchant"].get()
+            }
+        self.save_bis()
+        messagebox.showinfo("Guardado", "Cambios en BIS guardados correctamente")
+        self.update_priority()
 
 
 if __name__ == "__main__":
